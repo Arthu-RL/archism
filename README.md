@@ -1,32 +1,28 @@
-Perfect! Here's a polished `README.md` for your **Archism** project:
-
----
-
 # 🧱 Archism
 
-**One-shot Arch Linux installation and setup** for an empty disk (SSD/HDD).
+**One-shot Arch Linux installation and setup** for an empty disk (SSD/HDD).  
 Archism automates the **entire installation process**, from disk partitioning to a ready-to-use graphical environment, shell, drivers, and tools — in just **one command**.
 
 ---
 
 ## 🚀 Features
 
-* 🧹 Auto-wipes and partitions your disk (GPT + UEFI)
-* ⚙️ Installs the full Arch base system
-* 🖥️ Sets up your chosen Desktop Environment (e.g., Cinnamon, GNOME, KDE, etc.)
-* 🧩 Installs NVIDIA drivers, Docker, and developer tools
-* 🌍 Configures locale, timezone, keymap
-* 👤 Creates your user account with Zsh and Oh-My-Zsh
-* 🔒 Enables LightDM, Docker, and NetworkManager services
-* 🔁 Installs and configures GRUB EFI bootloader
+- 🧹 Auto-wipes and partitions your disk (GPT + UEFI)
+- ⚙️ Installs the full Arch base system
+- 🖥️ Sets up your chosen Desktop Environment (e.g., Cinnamon, GNOME, KDE)
+- 🧩 Installs NVIDIA drivers, Docker, and developer tools
+- 🌍 Configures locale, timezone, and keymap
+- 👤 Creates your user account with Zsh and Oh-My-Zsh
+- 🔒 Enables GDM, Docker, and NetworkManager services
+- 🔁 Installs and configures GRUB EFI bootloader
 
 ---
 
 ## 🛠️ Requirements
 
-* A system with UEFI firmware (not legacy BIOS)
-* Internet access (Wi-Fi or Ethernet)
-* A blank disk (e.g., `/dev/sda`) that will be erased!
+- A system with UEFI firmware (not legacy BIOS)
+- Internet access (Wi-Fi or Ethernet)
+- A blank disk (e.g., `/dev/sda`) that will be **completely erased**
 
 ---
 
@@ -69,7 +65,7 @@ HOSTNAME="archbox"
 USERNAME="username"
 LOCALE="en_US.UTF-8" # "pt_BR.UTF-8"
 TIMEZONE="America/Sao_Paulo"
-UI="cinnamon"   # Options: cinnamon, gnome, plasma, xfce4, etc.
+UI="gnome"   # Options: cinnamon, gnome, plasma, xfce4, etc.
 KEYMAP="br-abnt2"
 ```
 

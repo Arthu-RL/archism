@@ -1,14 +1,15 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-USERNAME=$1
-HOSTNAME=$2
-LOCALE=$3
-TIMEZONE=$4
-UI=$5
-KEYMAP=$6
+USERNAME="$1"
+PASSWORD="$2"
+HOSTNAME="$3"
+LOCALE="$4"
+TIMEZONE="$5"
+UI="$6"
+KEYMAP="$7"
 
-# Set timezone, locale, hostname
+echo ">>> Setting timezone, locale, hostname..."
 ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 hwclock --systohc
 sed -i "s/^#${LOCALE}/${LOCALE}/" /etc/locale.gen
@@ -16,30 +17,70 @@ locale-gen
 echo "LANG=${LOCALE}" > /etc/locale.conf
 echo "KEYMAP=${KEYMAP}" > /etc/vconsole.conf
 echo "$HOSTNAME" > /etc/hostname
-echo "127.0.1.1    $HOSTNAME.localdomain $HOSTNAME" >> /etc/hosts
 
-# Install drivers, UI, etc.
+echo ">>> Configuring /etc/hosts..."
+cat > /etc/hosts <<EOF
+127.0.0.1   localhost
+::1         localhost
+127.0.1.1   $HOSTNAME.localdomain $HOSTNAME
+EOF
+
+echo ">>> Installing system packages..."
 pacman -Syu --noconfirm
-pacman -S --noconfirm $UI xorg xorg-xinit lightdm lightdm-gtk-greeter \
-    docker nvidia nvidia-utils nvidia-settings git nano zsh sudo
+
+# Determine Display Manager
+case $UI in
+    gnome) DM="gdm";;
+    plasma) DM="sddm";;
+    *) DM="lightdm";;
+esac
+
+# Install GNOME, NVIDIA, and supporting tools
+pacman -S --noconfirm --needed $UI gnome-tweaks gnome-control-center \
+    xorg $DM docker git nano wget curl sudo zsh \
+    nvidia nvidia-utils nvidia-settings
+
+# NVIDIA + GNOME Wayland Compatibility (uses default Wayland)
+echo ">>> Configuring NVIDIA for GNOME on Wayland..."
+mkdir -p /etc/modprobe.d
+echo "options nvidia-drm modeset=1" > /etc/modprobe.d/nvidia.conf
+
+mkdir -p /etc/X11/xorg.conf.d
+echo -e 'Section "Device"\n  Identifier "Nvidia Card"\n  Driver "nvidia"\nEndSection' > /etc/X11/xorg.conf.d/10-nvidia.conf
+
+# Ensure Wayland is enabled
+sed -i 's/^#WaylandEnable=false/WaylandEnable=true/' /etc/gdm/custom.conf || echo -e "[daemon]\nWaylandEnable=true" >> /etc/gdm/custom.conf
+
+# CPU microcode
+CPU_VENDOR=$(grep -m 1 "vendor_id" /proc/cpuinfo | awk '{print $3}')
+if [ "$CPU_VENDOR" = "GenuineIntel" ]; then
+    pacman -S --noconfirm intel-ucode
+elif [ "$CPU_VENDOR" = "AuthenticAMD" ]; then
+    pacman -S --noconfirm amd-ucode
+fi
 
 # Enable services
 systemctl enable NetworkManager
-systemctl enable lightdm
+systemctl enable $DM
 systemctl enable docker
 
-# Create user
-useradd -m -G wheel,docker -s /bin/zsh $USERNAME
-echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers
-echo "Set password for $USERNAME:"
-passwd $USERNAME
+# User creation
+echo ">>> Creating user '$USERNAME'..."
+useradd -m -G wheel,docker -s /bin/zsh "$USERNAME"
+echo "$USERNAME:$PASSWORD" | chpasswd
 
-# Oh-My-Zsh
-runuser -l $USERNAME -c "
-    sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\" --unattended
-"
+# Sudoers config
+sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 
-# Bootloader
+# Oh-My-Zsh install
+echo ">>> Installing Oh-My-Zsh for $USERNAME..."
+runuser -l "$USERNAME" -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended'
+
+# GRUB install
+echo ">>> Installing GRUB bootloader..."
 pacman -S --noconfirm grub efibootmgr
 grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 grub-mkconfig -o /boot/grub/grub.cfg
+
+echo ">>> Setup complete. You can now reboot!"
+exit
