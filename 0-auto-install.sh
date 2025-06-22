@@ -1,14 +1,59 @@
 #!/bin/bash
 set -euo pipefail
 
-### --- CONFIGURATION --- ###
-DISK="/dev/sda"
-HOSTNAME="archism"
-USERNAME="username"
-LOCALE="en_US.UTF-8"
-TIMEZONE="America/Sao_Paulo"
-UI="gnome"
-KEYMAP="br-abnt2"
+echo ">>> Welcome to Archism auto-installer"
+echo
+
+### --- HELPER FUNCTION --- ###
+prompt_default() {
+    local varname=$1
+    local prompt=$2
+    local default=$3
+    read -rp "$prompt [$default]: " input
+    export "$varname"="${input:-$default}"
+}
+
+### --- CONFIGURATION INPUT --- ###
+
+# Ask for DISK (default: /dev/sda)
+prompt_default DISK "Target disk (will be ERASED)" "/dev/sda"
+
+# Ask for HOSTNAME
+prompt_default HOSTNAME "Hostname" "archism"
+
+# Ask for USERNAME (REQUIRED)
+while true; do
+    read -rp "Username (required): " USERNAME
+    [[ -n "$USERNAME" ]] && break
+    echo "Username cannot be empty."
+done
+
+# Ask for LOCALE
+prompt_default LOCALE "Locale" "en_US.UTF-8"
+
+# Ask for TIMEZONE
+prompt_default TIMEZONE "Timezone (Region/City)" "America/Sao_Paulo"
+
+# Ask for KEYMAP
+prompt_default KEYMAP "Keyboard layout (KEYMAP)" "br-abnt2"
+
+# Ask for UI/Desktop Environment
+prompt_default UI "Desktop Environment [gnome, cinnamon, plasma, xfce4, etc.]" "gnome"
+
+### --- CONTINUE WITH INSTALLATION --- ###
+echo
+echo ">>> Summary:"
+echo "Disk:         $DISK"
+echo "Hostname:     $HOSTNAME"
+echo "Username:     $USERNAME"
+echo "Locale:       $LOCALE"
+echo "Timezone:     $TIMEZONE"
+echo "Keymap:       $KEYMAP"
+echo "UI:           $UI"
+echo
+
+read -p "Continue with these settings? (y/n): " CONFIRM
+[[ "$CONFIRM" == "y" || "$CONFIRM" == "Y" ]] || exit 1
 
 ### --- SENSITIVE DATA --- ###
 read -sp "Enter password for user '$USERNAME': " PASSWORD

@@ -31,7 +31,7 @@ Archism automates the **entire installation process**, from disk partitioning to
 > Boot into the Arch ISO, connect to the internet, then run:
 
 ```sh
-curl -O https://raw.githubusercontent.com/arthur/archism/main/0-auto-install.sh
+curl -O https://raw.githubusercontent.com/Arthu-RL/archism/main/0-auto-install.sh
 chmod +x 0-auto-install.sh
 sudo ./0-auto-install.sh
 ```
