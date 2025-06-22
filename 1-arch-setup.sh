@@ -37,8 +37,8 @@ esac
 
 # Install GNOME, NVIDIA, and supporting tools
 pacman -S --noconfirm --needed $UI gnome-control-center \
-    xorg $DM docker git nano wget curl sudo zsh \
-    nvidia nvidia-utils nvidia-settings
+    xorg $DM docker docker-buildx docker-compose git nano code wget curl sudo zsh \
+    nvidia nvidia-utils nvidia-settings cuda cudnn gcc gdb
 
 # NVIDIA + GNOME Wayland Compatibility (uses default Wayland)
 echo ">>> Configuring NVIDIA for GNOME on Wayland..."
