@@ -71,7 +71,7 @@ if [[ "$DO_FULL" =~ ^[Yy]$ ]]; then
     mount "${DISK}1" /mnt/boot
 
     echo ">>> Installing base system..."
-    pacstrap /mnt base linux linux-firmware nano git zsh wget curl sudo networkmanager
+    pacstrap /mnt base linux linux-firmware nano git zsh wget curl sudo networkmanager nautilus chromium
 
     echo ">>> Generating fstab..."
     genfstab -U /mnt >> /mnt/etc/fstab
