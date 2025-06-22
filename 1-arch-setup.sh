@@ -36,7 +36,7 @@ case $UI in
 esac
 
 # Install GNOME, NVIDIA, and supporting tools
-pacman -S --noconfirm --needed $UI gnome-tweaks gnome-control-center \
+pacman -S --noconfirm --needed $UI gnome-control-center \
     xorg $DM docker git nano wget curl sudo zsh \
     nvidia nvidia-utils nvidia-settings
 
