@@ -38,12 +38,6 @@ case $UI in
     *) DM="lightdm";;
 esac
 
-# Remove legacy iptables if it’s installed
-if pacman -Q iptables &>/dev/null; then
-    echo ">>> Removing iptables (legacy) to prevent conflict..."
-    pacman -R --noconfirm iptables
-fi
-
 # Internet optimization tool - keep your mirror list fresh and optimized for your location and internet speed
 pacman -S --noconfirm reflector
 reflector --latest 10 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
@@ -51,7 +45,7 @@ reflector --latest 10 --protocol https --sort rate --save /etc/pacman.d/mirrorli
 # Install GNOME and development tools
 pacman -S --noconfirm --needed $UI gnome-control-center \
     xorg $DM docker docker-buildx docker-compose git nano code wget curl sudo zsh \
-    gcc gdb ttf-sourcecodepro-nerd iptables-nft ufw
+    gcc gdb ttf-sourcecodepro-nerd iptables-nft ufw --overwrite "*"
 
 echo ">>> Forcing UFW to use nftables backend..."
 echo "backend=nft" > /etc/ufw/ufw.conf
