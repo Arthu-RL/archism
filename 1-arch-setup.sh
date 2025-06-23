@@ -47,9 +47,6 @@ pacman -S --noconfirm --needed $UI gnome-control-center \
     xorg $DM docker docker-buildx docker-compose git nano code wget curl sudo zsh \
     gcc gdb ttf-sourcecodepro-nerd ufw
 
-echo ">>> Forcing UFW to use nftables backend..."
-echo "backend=nft" > /etc/ufw/ufw.conf
-
 # Install NVIDIA, and supporting tools for docker
 pacman -S --noconfirm --needed nvidia nvidia-utils nvidia-settings nvidia-container-toolkit cuda cuda-tools cudnn
 
