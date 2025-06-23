@@ -73,9 +73,12 @@ mkdir -p /etc/X11/xorg.conf.d
 echo -e 'Section "Device"\n  Identifier "Nvidia Card"\n  Driver "nvidia"\nEndSection' > /etc/X11/xorg.conf.d/10-nvidia.conf
 
 # Ensure Wayland is enabled
-grep -q '^WaylandEnable=' /etc/gdm/custom.conf \
-  && sed -i 's/^WaylandEnable=.*/WaylandEnable=true/' /etc/gdm/custom.conf \
-  || echo -e "[daemon]\nWaylandEnable=true" >> /etc/gdm/custom.conf
+if [ "$DM" = "gdm" ]; then
+  echo ">>> Configurando GDM para Wayland + NVIDIA"
+  grep -q '^WaylandEnable=' /etc/gdm/custom.conf \
+    && sed -i 's/^WaylandEnable=.*/WaylandEnable=true/' /etc/gdm/custom.conf \
+    || echo -e "[daemon]\nWaylandEnable=true" >> /etc/gdm/custom.conf
+fi
 
 # CPU microcode
 CPU_VENDOR=$(grep -m 1 "vendor_id" /proc/cpuinfo | awk '{print $3}')
