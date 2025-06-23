@@ -45,7 +45,7 @@ reflector --latest 10 --protocol https --sort rate --save /etc/pacman.d/mirrorli
 # Install GNOME and development tools
 pacman -S --noconfirm --needed $UI gnome-control-center \
     xorg $DM docker docker-buildx docker-compose git nano code wget curl sudo zsh \
-    gcc gdb ttf-sourcecodepro-nerd ufw
+    gcc gdb ttf-sourcecodepro-nerd
 
 # Install NVIDIA, and supporting tools for docker
 pacman -S --noconfirm --needed nvidia nvidia-utils nvidia-settings nvidia-container-toolkit cuda cuda-tools cudnn
@@ -92,13 +92,6 @@ fi
 systemctl enable NetworkManager
 systemctl enable $DM
 systemctl enable docker
-systemctl enable ufw
-
-# Ensure nf_conntrack is loaded (needed for iptables and ufw)
-echo nf_conntrack > /etc/modules-load.d/conntrack.conf
-
-# Activate firewall
-ufw enable
 
 # User creation
 echo ">>> Creating user '$USERNAME'..."
@@ -111,8 +104,6 @@ sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 # Oh-My-Zsh install
 echo ">>> Installing Oh-My-Zsh for $USERNAME..."
 runuser -l "$USERNAME" -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended'
-runuser -l "$USERNAME" -c "echo 'export LANG=$LOCALE' >> ~/.zshrc"
-runuser -l "$USERNAME" -c "echo 'export KEYMAP=$KEYMAP' >> ~/.zshrc"
 
 # GRUB install
 echo ">>> Installing GRUB bootloader..."
