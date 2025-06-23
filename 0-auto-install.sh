@@ -45,7 +45,18 @@ read -p "Continue with these settings? (y/n): " CONFIRM
 [[ "$CONFIRM" == "y" || "$CONFIRM" == "Y" ]] || exit 1
 
 ### --- SENSITIVE DATA --- ###
-read -sp "Enter password for user '$USERNAME': " PASSWORD
+while true; do
+    read -sp "Enter password for user '$USERNAME': "$'\n' password1
+    read -sp "Confirm password: "$'\n' password2
+
+    if [ "$password1" == "$password2" ]; then
+        PASSWORD="$password1"
+        break
+    else
+        echo "Password is not equal, please, try again."
+    fi
+done
+
 echo
 
 ### --- CLOCK SYNC --- ###
