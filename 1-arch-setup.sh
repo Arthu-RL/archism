@@ -108,6 +108,8 @@ sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 # Oh-My-Zsh install
 echo ">>> Installing Oh-My-Zsh for $USERNAME..."
 runuser -l "$USERNAME" -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended'
+runuser -l "$USERNAME" -c "echo 'export LANG=$LOCALE' >> ~/.zshrc"
+runuser -l "$USERNAME" -c "echo 'export KEYMAP=$KEYMAP' >> ~/.zshrc"
 
 # GRUB install
 echo ">>> Installing GRUB bootloader..."
