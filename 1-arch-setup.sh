@@ -12,7 +12,7 @@ KEYMAP="$7"
 echo ">>> Setting timezone, locale, hostname..."
 ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 hwclock --systohc
-sed -i "s/^#${LOCALE}/${LOCALE}/" /etc/locale.gen
+sed -i "s/^#\(${LOCALE}\)/\1/" /etc/locale.gen
 locale-gen
 echo "LANG=${LOCALE}" > /etc/locale.conf
 echo "KEYMAP=${KEYMAP}" > /etc/vconsole.conf
@@ -35,10 +35,31 @@ case $UI in
     *) DM="lightdm";;
 esac
 
-# Install GNOME, NVIDIA, and supporting tools
+# Internet optimization tool - keep your mirror list fresh and optimized for your location and internet speed
+pacman -S --noconfirm reflector
+reflector --latest 10 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+
+# Install GNOME, and supporting tools for dev
 pacman -S --noconfirm --needed $UI gnome-control-center \
     xorg $DM docker docker-buildx docker-compose git nano code wget curl sudo zsh \
-    nvidia nvidia-utils nvidia-settings cuda cudnn gcc gdb
+    gcc gdb ttf-sourcecodepro-nerd ufw
+
+# Install NVIDIA, and supporting tools for docker
+pacman -S --noconfirm --needed nvidia nvidia-utils nvidia-settings nvidia-container-toolkit cuda cuda-tools cudnn
+
+nvidia-ctk runtime configure --runtime=docker
+
+cat > /etc/docker/daemon.json <<EOF
+{
+  "runtimes": {
+    "nvidia": {
+      "args": [],
+      "path": "nvidia-container-runtime"
+    }
+  },
+  "dns": ["8.8.8.8", "8.8.4.4"]
+}
+EOF
 
 # NVIDIA + GNOME Wayland Compatibility (uses default Wayland)
 echo ">>> Configuring NVIDIA for GNOME on Wayland..."
@@ -49,7 +70,9 @@ mkdir -p /etc/X11/xorg.conf.d
 echo -e 'Section "Device"\n  Identifier "Nvidia Card"\n  Driver "nvidia"\nEndSection' > /etc/X11/xorg.conf.d/10-nvidia.conf
 
 # Ensure Wayland is enabled
-sed -i 's/^#WaylandEnable=false/WaylandEnable=true/' /etc/gdm/custom.conf || echo -e "[daemon]\nWaylandEnable=true" >> /etc/gdm/custom.conf
+grep -q '^WaylandEnable=' /etc/gdm/custom.conf \
+  && sed -i 's/^WaylandEnable=.*/WaylandEnable=true/' /etc/gdm/custom.conf \
+  || echo -e "[daemon]\nWaylandEnable=true" >> /etc/gdm/custom.conf
 
 # CPU microcode
 CPU_VENDOR=$(grep -m 1 "vendor_id" /proc/cpuinfo | awk '{print $3}')
@@ -63,6 +86,10 @@ fi
 systemctl enable NetworkManager
 systemctl enable $DM
 systemctl enable docker
+systemctl enable ufw
+
+# Trigger Services
+ufw enable
 
 # User creation
 echo ">>> Creating user '$USERNAME'..."
