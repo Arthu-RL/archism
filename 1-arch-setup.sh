@@ -38,14 +38,6 @@ case $UI in
     *) DM="lightdm";;
 esac
 
-# Install modern iptables and remove legacy
-if pacman -Q iptables &>/dev/null; then
-    echo ">>> Removing iptables (legacy) to prevent conflict..."
-    pacman -R --noconfirm iproute2 iptables 
-fi
-
-pacman -S --noconfirm iptables-nft iproute2
-
 # Internet optimization tool - keep your mirror list fresh and optimized for your location and internet speed
 pacman -S --noconfirm reflector
 reflector --latest 10 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
