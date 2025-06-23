@@ -15,7 +15,10 @@ hwclock --systohc
 sed -i "s/^#\(${LOCALE}\)/\1/" /etc/locale.gen
 locale-gen
 echo "LANG=${LOCALE}" > /etc/locale.conf
+
 echo "KEYMAP=${KEYMAP}" > /etc/vconsole.conf
+echo "FONT=latarcyrheb-sun32" >> /etc/vconsole.conf
+
 echo "$HOSTNAME" > /etc/hostname
 
 echo ">>> Configuring /etc/hosts..."
@@ -42,7 +45,7 @@ reflector --latest 10 --protocol https --sort rate --save /etc/pacman.d/mirrorli
 # Install GNOME, and supporting tools for dev
 pacman -S --noconfirm --needed $UI gnome-control-center \
     xorg $DM docker docker-buildx docker-compose git nano code wget curl sudo zsh \
-    gcc gdb ttf-sourcecodepro-nerd ufw
+    gcc gdb ttf-sourcecodepro-nerd iptables-nft ufw
 
 # Install NVIDIA, and supporting tools for docker
 pacman -S --noconfirm --needed nvidia nvidia-utils nvidia-settings nvidia-container-toolkit cuda cuda-tools cudnn
@@ -88,7 +91,10 @@ systemctl enable $DM
 systemctl enable docker
 systemctl enable ufw
 
-# Trigger Services
+# Ensure nf_conntrack is loaded (needed for iptables and ufw)
+echo nf_conntrack > /etc/modules-load.d/conntrack.conf
+
+# Activate firewall
 ufw enable
 
 # User creation
