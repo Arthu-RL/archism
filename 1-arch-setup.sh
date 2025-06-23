@@ -42,10 +42,25 @@ esac
 pacman -S --noconfirm reflector
 reflector --latest 10 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
 
-# Install GNOME, and supporting tools for dev
+# Install GNOME and development tools, skipping iptables directly
 pacman -S --noconfirm --needed $UI gnome-control-center \
     xorg $DM docker docker-buildx docker-compose git nano code wget curl sudo zsh \
-    gcc gdb ttf-sourcecodepro-nerd iptables-nft ufw
+    gcc gdb ttf-sourcecodepro-nerd ufw
+
+# Ensure iptables-nft is installed and satisfies dependencies
+if ! pacman -Q iptables-nft &>/dev/null; then
+    echo ">>> Installing iptables-nft (safe replacement for legacy iptables)..."
+    pacman -S --noconfirm --needed iptables-nft
+fi
+
+# Remove legacy iptables if it’s installed
+if pacman -Q iptables &>/dev/null; then
+    echo ">>> Removing legacy iptables to prevent conflict with iptables-nft..."
+    pacman -R --noconfirm iptables
+fi
+
+echo ">>> Forcing UFW to use nftables backend..."
+echo "backend=nft" > /etc/ufw/ufw.conf
 
 # Install NVIDIA, and supporting tools for docker
 pacman -S --noconfirm --needed nvidia nvidia-utils nvidia-settings nvidia-container-toolkit cuda cuda-tools cudnn
