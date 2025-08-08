@@ -1,10 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-echo ">>> Welcome to Archism auto-installer"
+# --- Logging helper ---
+log() { echo -e "\033[1;32m[$(date +'%H:%M:%S')] $1\033[0m"; }
+err() { echo -e "\033[1;31m[ERROR $(date +'%H:%M:%S')] $1\033[0m" >&2; }
+
+log "Welcome to Archism auto-installer"
 echo
 
-### --- HELPER FUNCTION --- ###
+# --- Prompt helper ---
 prompt_default() {
     local varname=$1
     local prompt=$2
@@ -13,22 +17,19 @@ prompt_default() {
     export "$varname"="${input:-$default}"
 }
 
-### --- CONFIGURATION INPUT --- ###
-
+# --- Collect settings ---
 prompt_default DISK "Target disk (will be ERASED)" "/dev/sda"
-
 if [ ! -b "$DISK" ]; then
-    echo "Error: '$DISK' is not a valid block device."
+    err "'$DISK' is not a valid block device."
     exit 1
 fi
-
 
 prompt_default HOSTNAME "Hostname" "archism"
 
 while true; do
     read -rp "Username (required): " USERNAME
     [[ -n "$USERNAME" ]] && break
-    echo "Username cannot be empty."
+    err "Username cannot be empty."
 done
 
 prompt_default LOCALE "Locale" "en_US.UTF-8"
@@ -36,9 +37,19 @@ prompt_default TIMEZONE "Timezone (Region/City)" "America/Sao_Paulo"
 prompt_default KEYMAP "Keyboard layout (KEYMAP)" "br-abnt2"
 prompt_default UI "Desktop Environment [gnome, cinnamon, plasma, xfce4, etc.]" "gnome"
 
-### --- CONTINUE WITH INSTALLATION --- ###
+# GPU detection
+GPU_VENDOR="unknown"
+if lspci | grep -qi nvidia; then
+    GPU_VENDOR="nvidia"
+elif lspci | grep -qi amd; then
+    GPU_VENDOR="amd"
+elif lspci | grep -qi intel; then
+    GPU_VENDOR="intel"
+fi
+
+# --- Summary ---
 echo
-echo ">>> Summary:"
+log "Summary:"
 echo "Disk:         $DISK"
 echo "Hostname:     $HOSTNAME"
 echo "Username:     $USERNAME"
@@ -46,92 +57,94 @@ echo "Locale:       $LOCALE"
 echo "Timezone:     $TIMEZONE"
 echo "Keymap:       $KEYMAP"
 echo "UI:           $UI"
+echo "GPU Vendor:   $GPU_VENDOR"
 echo
 
 read -p "Continue with these settings? (y/n): " CONFIRM
-[[ "$CONFIRM" == "y" || "$CONFIRM" == "Y" ]] || exit 1
+[[ "$CONFIRM" =~ ^[Yy]$ ]] || exit 1
 
-### --- SENSITIVE DATA --- ###
+# --- Password ---
 while true; do
-    read -sp "Enter password for user '$USERNAME': "$'\n' password1
-    read -sp "Confirm password: "$'\n' password2
-
+    read -sp "Enter password for user '$USERNAME': " password1; echo
+    read -sp "Confirm password: " password2; echo
     if [ "$password1" == "$password2" ]; then
         PASSWORD="$password1"
         break
     else
-        echo "Password is not equal, please, try again."
+        err "Passwords do not match, please try again."
     fi
 done
 
-echo
-
-### --- CLOCK SYNC --- ###
-echo ">>> Synchronizing system clock..."
+# --- Clock sync ---
+log "Synchronizing system clock..."
 timedatectl set-ntp true
 
-### --- ASK TO RUN FULL INSTALL --- ###
+# --- Internet check ---
+if ! ping -c 1 archlinux.org &>/dev/null; then
+    err "No internet connection. Please connect and try again."
+    exit 1
+fi
+
+# --- Full install? ---
 read -p "Run full install (wipe disk and install base system)? [y/N]: " DO_FULL
 if [[ "$DO_FULL" =~ ^[Yy]$ ]]; then
-    ### --- PARTITIONING DISK --- ###
-    echo ">>> Wiping disk and creating GPT partitions on $DISK..."
-    sgdisk -Z "$DISK"
+    log "Wiping disk and creating GPT partitions..."
+    sgdisk -Z "$DISK" || { err "sgdisk failed."; exit 1; }
     sgdisk -n 1:0:+2048M -t 1:ef00 -c 1:EFI "$DISK"
     sgdisk -n 2:0:0    -t 2:8300 -c 2:ROOT "$DISK"
 
-    # Detect correct partition names (for /dev/sdX or /dev/nvme0n1)
     PART_BOOT="$(ls ${DISK}* | grep -E "${DISK}(p)?1$")"
     PART_ROOT="$(ls ${DISK}* | grep -E "${DISK}(p)?2$")"
 
     if [ ! -d /sys/firmware/efi ]; then
-        echo "Warning: System is not booted in UEFI mode!"
-        echo "This script assumes UEFI. Exiting for safety."
+        err "System is not in UEFI mode!"
         exit 1
     fi
 
-    echo ">>> Formatting partitions..."
+    log "Formatting partitions..."
     mkfs.fat -F32 "$PART_BOOT"
-    mkfs.ext4 "$PART_ROOT"
+    mkfs.ext4 -F "$PART_ROOT"
 
-    echo ">>> Mounting file systems..."
+    log "Mounting filesystems..."
     mount "$PART_ROOT" /mnt
     mkdir -p /mnt/boot
     mount "$PART_BOOT" /mnt/boot
 
-    echo ">>> Installing base system..."
-    pacstrap /mnt base linux linux-firmware nano git zsh wget curl sudo networkmanager nautilus chromium
-
-    echo ">>> Generating fstab..."
+    log "Installing base system..."
+    pacstrap /mnt --needed base linux linux-firmware nano git zsh wget curl sudo networkmanager
+    log "Generating fstab..."
     genfstab -U /mnt >> /mnt/etc/fstab
 else
-    echo ">>> Skipping base install. Checking if /mnt is mounted..."
-
-    if ! mountpoint -q /mnt; then
-        echo ">>> Mounting existing partitions..."
-        mount "${PART_ROOT}" /mnt
-        mkdir -p /mnt/boot
-        mount "${PART_BOOT}" /mnt/boot
-    else
-        echo ">>> /mnt is already mounted. Continuing..."
-    fi
-
-    echo ">>> You can chroot and rerun the setup script manually if needed."
+    # Require user to set PART_BOOT and PART_ROOT if skipping full install
+    read -rp "Enter EFI partition (e.g., /dev/sda1): " PART_BOOT
+    read -rp "Enter ROOT partition (e.g., /dev/sda2): " PART_ROOT
+    log "Mounting existing partitions..."
+    mount "$PART_ROOT" /mnt
+    mkdir -p /mnt/boot
+    mount "$PART_BOOT" /mnt/boot
 fi
 
-fallocate -l 8G /mnt/swapfile
+# --- Swap size based on RAM ---
+TOTAL_RAM=$(grep MemTotal /proc/meminfo | awk '{print int($2/1024)}')
+SWAP_SIZE=$((TOTAL_RAM < 8000 ? TOTAL_RAM : 8000)) # cap at 8GB
+log "Creating $SWAP_SIZE MB swapfile..."
+fallocate -l "${SWAP_SIZE}M" /mnt/swapfile
 chmod 600 /mnt/swapfile
 mkswap /mnt/swapfile
 echo '/swapfile none swap defaults 0 0' >> /mnt/etc/fstab
 
-### --- SETUP SCRIPT --- ###
-echo ">>> Downloading second stage setup script..."
-curl -L "https://raw.githubusercontent.com/Arthu-RL/archism/main/1-arch-setup.sh" -o /mnt/root/1-arch-setup.sh
+# --- Stage 2 ---
+log "Downloading second stage setup script..."
+if ! curl -fL "https://raw.githubusercontent.com/Arthu-RL/archism/main/1-arch-setup.sh" -o /mnt/root/1-arch-setup.sh; then
+    err "Failed to download stage 2 setup script."
+    exit 1
+fi
 chmod +x /mnt/root/1-arch-setup.sh
 
-echo ">>> Entering chroot and launching setup..."
-arch-chroot /mnt /root/1-arch-setup.sh "$USERNAME" "$PASSWORD" "$HOSTNAME" "$LOCALE" "$TIMEZONE" "$UI" "$KEYMAP"
+log "Entering chroot and launching setup..."
+arch-chroot /mnt /root/1-arch-setup.sh "$USERNAME" "$PASSWORD" "$HOSTNAME" "$LOCALE" "$TIMEZONE" "$UI" "$KEYMAP" "$GPU_VENDOR"
 
-echo ">>> Unmounting and rebooting in 5 seconds..."
+log "Unmounting and rebooting in 5 seconds..."
 umount -R /mnt
 sleep 5
 reboot
