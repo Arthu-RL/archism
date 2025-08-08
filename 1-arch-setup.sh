@@ -1,12 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
+# Arguments
 USERNAME="$1"
 PASSWORD="$2"
 HOSTNAME="$3"
 LOCALE="$4"
 TIMEZONE="$5"
-UI="$6"
+DM="$6"       # Display Manager argument (e.g., gdm, sddm, lightdm)
 KEYMAP="$7"
 
 echo ">>> Setting timezone, locale, hostname..."
@@ -28,27 +29,28 @@ cat > /etc/hosts <<EOF
 127.0.1.1   $HOSTNAME.localdomain $HOSTNAME
 EOF
 
-echo ">>> Installing system packages..."
+echo ">>> Updating system and installing reflector..."
 pacman -Syu --noconfirm
-
-# Determine Display Manager
-case $UI in
-    gnome) DM="gdm";;
-    plasma) DM="sddm";;
-    *) DM="lightdm";;
-esac
-
-# Internet optimization tool - keep your mirror list fresh and optimized for your location and internet speed
 pacman -S --noconfirm reflector
 reflector --latest 10 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
 
-# Install GNOME and development tools
-pacman -S --noconfirm --needed $UI gnome-control-center \
-    xorg $DM docker docker-buildx docker-compose git nano code wget curl sudo zsh \
-    gcc gdb ttf-sourcecodepro-nerd
+echo ">>> Installing Xorg, chosen Display Manager, and Desktop Environments..."
+pacman -S --noconfirm xorg $DM
 
-# Install NVIDIA, and supporting tools for docker
-pacman -S --noconfirm --needed nvidia nvidia-utils nvidia-settings nvidia-container-toolkit cuda cuda-tools cudnn
+# Install all UIs compatible with the chosen DM
+pacman -S --noconfirm \
+    gnome gnome-extra gnome-control-center \
+    plasma kde-applications \
+    cinnamon nemo-fileroller \
+    lxqt breeze-icons
+
+echo ">>> Installing development tools, Docker, NVIDIA, and utilities..."
+pacman -S --noconfirm --needed \
+    docker docker-buildx docker-compose \
+    git nano code wget curl sudo zsh \
+    gcc gdb ttf-sourcecodepro-nerd \
+    nvidia nvidia-utils nvidia-settings \
+    nvidia-container-toolkit cuda cuda-tools cudnn
 
 nvidia-ctk runtime configure --runtime=docker
 
@@ -64,17 +66,15 @@ cat > /etc/docker/daemon.json <<EOF
 }
 EOF
 
-# NVIDIA + GNOME Wayland Compatibility (uses default Wayland)
-echo ">>> Configuring NVIDIA for GNOME on Wayland..."
-mkdir -p /etc/modprobe.d
-echo "options nvidia-drm modeset=1" > /etc/modprobe.d/nvidia.conf
-
-mkdir -p /etc/X11/xorg.conf.d
-echo -e 'Section "Device"\n  Identifier "Nvidia Card"\n  Driver "nvidia"\nEndSection' > /etc/X11/xorg.conf.d/10-nvidia.conf
-
-# Ensure Wayland is enabled
+# NVIDIA + GNOME Wayland compatibility
 if [ "$DM" = "gdm" ]; then
-  echo ">>> Configurando GDM para Wayland + NVIDIA"
+  echo ">>> Configuring NVIDIA for Wayland in GDM..."
+  mkdir -p /etc/modprobe.d
+  echo "options nvidia-drm modeset=1" > /etc/modprobe.d/nvidia.conf
+
+  mkdir -p /etc/X11/xorg.conf.d
+  echo -e 'Section "Device"\n  Identifier "Nvidia Card"\n  Driver "nvidia"\nEndSection' > /etc/X11/xorg.conf.d/10-nvidia.conf
+
   grep -q '^WaylandEnable=' /etc/gdm/custom.conf \
     && sed -i 's/^WaylandEnable=.*/WaylandEnable=true/' /etc/gdm/custom.conf \
     || echo -e "[daemon]\nWaylandEnable=true" >> /etc/gdm/custom.conf
@@ -93,7 +93,7 @@ systemctl enable NetworkManager
 systemctl enable $DM
 systemctl enable docker
 
-# User creation
+# Create user
 echo ">>> Creating user '$USERNAME'..."
 useradd -m -G wheel,docker -s /bin/zsh "$USERNAME"
 echo "$USERNAME:$PASSWORD" | chpasswd
@@ -112,4 +112,3 @@ grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 grub-mkconfig -o /boot/grub/grub.cfg
 
 echo ">>> Setup complete. You can now reboot!"
-exit
