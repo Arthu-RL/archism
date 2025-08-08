@@ -7,7 +7,7 @@ PASSWORD="$2"
 HOSTNAME="$3"
 LOCALE="$4"
 TIMEZONE="$5"
-DM="$6"       # Display Manager argument (e.g., gdm, sddm, lightdm)
+DM="$6"
 KEYMAP="$7"
 
 echo ">>> Setting timezone, locale, hostname..."

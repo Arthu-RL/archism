@@ -65,7 +65,7 @@ HOSTNAME="archbox"
 USERNAME="username"
 LOCALE="en_US.UTF-8" # "pt_BR.UTF-8"
 TIMEZONE="America/Sao_Paulo"
-UI="gnome"   # Options: cinnamon, gnome, plasma, xfce4, etc.
+DM="gdm"    # Display Manager argument (e.g., gdm, sddm, lightdm)
 KEYMAP="br-abnt2"
 ```
 
