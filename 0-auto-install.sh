@@ -142,7 +142,7 @@ fi
 chmod +x /mnt/root/1-arch-setup.sh
 
 log "Entering chroot and launching setup..."
-arch-chroot /mnt /root/1-arch-setup.sh "$USERNAME" "$PASSWORD" "$HOSTNAME" "$LOCALE" "$TIMEZONE" "$UI" "$KEYMAP" "$GPU_VENDOR"
+arch-chroot /mnt /root/1-arch-setup.sh "$USERNAME" "$PASSWORD" "$HOSTNAME" "$LOCALE" "$TIMEZONE" "$UI" "$KEYMAP"
 
 log "Unmounting and rebooting in 5 seconds..."
 umount -R /mnt
