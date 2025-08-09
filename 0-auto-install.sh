@@ -35,7 +35,7 @@ done
 prompt_default LOCALE "Locale" "en_US.UTF-8"
 prompt_default TIMEZONE "Timezone (Region/City)" "America/Sao_Paulo"
 prompt_default KEYMAP "Keyboard layout (KEYMAP)" "br-abnt2"
-prompt_default UI "Desktop Environment [gnome, cinnamon, plasma, xfce4, etc.]" "gnome"
+prompt_default DM "Display Manager argument (e.g., gdm, sddm, lightdm)" "gdm"
 
 # GPU detection
 GPU_VENDOR="unknown"
@@ -56,7 +56,7 @@ echo "Username:     $USERNAME"
 echo "Locale:       $LOCALE"
 echo "Timezone:     $TIMEZONE"
 echo "Keymap:       $KEYMAP"
-echo "UI:           $UI"
+echo "DM:           $DM"
 echo "GPU Vendor:   $GPU_VENDOR"
 echo
 
@@ -142,7 +142,7 @@ fi
 chmod +x /mnt/root/1-arch-setup.sh
 
 log "Entering chroot and launching setup..."
-arch-chroot /mnt /root/1-arch-setup.sh "$USERNAME" "$PASSWORD" "$HOSTNAME" "$LOCALE" "$TIMEZONE" "$UI" "$KEYMAP"
+arch-chroot /mnt /root/1-arch-setup.sh "$USERNAME" "$PASSWORD" "$HOSTNAME" "$LOCALE" "$TIMEZONE" "$DM" "$KEYMAP"
 
 log "Unmounting and rebooting in 5 seconds..."
 umount -R /mnt
