@@ -5,8 +5,8 @@ set -euo pipefail
 log() { echo -e "\033[1;32m[$(date +'%H:%M:%S')] $1\033[0m"; }
 
 # --- Validate arguments ---
-if [ "$#" -ne 7 ]; then
-    echo "Usage: $0 <username> <password> <hostname> <locale> <timezone> <display_manager> <keymap>"
+if [ "$#" -ne 8 ]; then
+    echo "Usage: $0 <username> <password> <hostname> <locale> <timezone> <display_manager> <keymap> <gpu_vendor>"
     exit 1
 fi
 
@@ -17,6 +17,7 @@ LOCALE="$4"
 TIMEZONE="$5"
 DM="$6"
 KEYMAP="$7"
+GPU_VENDOR="$8"
 
 # --- Time & Locale ---
 log "Setting timezone, locale, hostname..."
@@ -29,47 +30,59 @@ echo "KEYMAP=${KEYMAP}" > /etc/vconsole.conf
 echo "FONT=latarcyrheb-sun32" >> /etc/vconsole.conf
 echo "$HOSTNAME" > /etc/hostname
 
-# --- Hosts ---
 cat > /etc/hosts <<EOF
 127.0.0.1   localhost
 ::1         localhost
 127.0.1.1   $HOSTNAME.localdomain $HOSTNAME
 EOF
 
-# --- System Update & Mirrorlist ---
+# --- System Update & Mirrors ---
 log "Updating system and installing reflector..."
 pacman -Syu --noconfirm --needed
 pacman -S --noconfirm --needed reflector
 reflector --country 'Brazil' --latest 10 --protocol https --sort rate --save /etc/pacman.d/mirrorlist || \
 reflector --latest 5 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
 
-# --- Install Desktop & Tools ---
-log "Installing desktop environments, dev tools, Docker, NVIDIA..."
+# --- Install Desktop Environments (minimal) ---
+log "Installing minimal desktop environments..."
 pacman -S --noconfirm --needed \
     xorg $DM \
-    gnome gnome-extra gnome-control-center \
-    plasma kde-applications \
+    gnome-shell gnome-control-center gnome-terminal nautilus \
+    plasma-desktop dolphin konsole \
     cinnamon nemo-fileroller \
     lxqt breeze-icons \
     docker docker-buildx docker-compose \
     git nano code wget curl sudo zsh \
-    gcc gdb ttf-sourcecodepro-nerd \
-    nvidia nvidia-utils nvidia-settings \
-    nvidia-container-toolkit cuda cuda-tools cudnn
+    gcc gdb ttf-sourcecodepro-nerd
 
-# --- NVIDIA Config ---
-if lspci | grep -i nvidia &>/dev/null; then
-    log "Configuring NVIDIA..."
-    echo "options nvidia-drm modeset=1" > /etc/modprobe.d/nvidia.conf
-    mkdir -p /etc/X11/xorg.conf.d
-    echo -e 'Section "Device"\n  Identifier "Nvidia Card"\n  Driver "nvidia"\nEndSection' > /etc/X11/xorg.conf.d/10-nvidia.conf
-    if [ "$DM" = "gdm" ]; then
-        sed -i '/^#*WaylandEnable=/c\WaylandEnable=true' /etc/gdm/custom.conf || echo -e "[daemon]\nWaylandEnable=true" >> /etc/gdm/custom.conf
-    fi
-fi
+# --- Remove software stores if present ---
+pacman -Rns --noconfirm gnome-software discover mintinstall || true
 
-# --- Docker Config ---
-nvidia-ctk runtime configure --runtime=docker
+# --- GPU Drivers ---
+log "Installing GPU drivers for $GPU_VENDOR..."
+case "$GPU_VENDOR" in
+    nvidia)
+        pacman -S --noconfirm --needed nvidia nvidia-utils nvidia-settings nvidia-container-toolkit cuda cuda-tools cudnn
+        echo "options nvidia-drm modeset=1" > /etc/modprobe.d/nvidia.conf
+        mkdir -p /etc/X11/xorg.conf.d
+        echo -e 'Section "Device"\n  Identifier "Nvidia Card"\n  Driver "nvidia"\nEndSection' > /etc/X11/xorg.conf.d/10-nvidia.conf
+        if [ "$DM" = "gdm" ]; then
+            sed -i '/^#*WaylandEnable=/c\WaylandEnable=true' /etc/gdm/custom.conf || echo -e "[daemon]\nWaylandEnable=true" >> /etc/gdm/custom.conf
+        fi
+        nvidia-ctk runtime configure --runtime=docker
+        ;;
+    amd)
+        pacman -S --noconfirm --needed xf86-video-amdgpu vulkan-radeon lib32-vulkan-radeon
+        ;;
+    intel)
+        pacman -S --noconfirm --needed mesa vulkan-intel lib32-vulkan-intel
+        ;;
+    *)
+        log "Unknown GPU vendor: $GPU_VENDOR. Skipping driver install."
+        ;;
+esac
+
+# --- Docker config ---
 cat > /etc/docker/daemon.json <<EOF
 {
   "runtimes": {

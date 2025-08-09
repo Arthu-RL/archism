@@ -115,7 +115,6 @@ if [[ "$DO_FULL" =~ ^[Yy]$ ]]; then
     log "Generating fstab..."
     genfstab -U /mnt >> /mnt/etc/fstab
 else
-    # Require user to set PART_BOOT and PART_ROOT if skipping full install
     read -rp "Enter EFI partition (e.g., /dev/sda1): " PART_BOOT
     read -rp "Enter ROOT partition (e.g., /dev/sda2): " PART_ROOT
     log "Mounting existing partitions..."
@@ -126,7 +125,7 @@ fi
 
 # --- Swap size based on RAM ---
 TOTAL_RAM=$(grep MemTotal /proc/meminfo | awk '{print int($2/1024)}')
-SWAP_SIZE=$((TOTAL_RAM < 8000 ? TOTAL_RAM : 8000)) # cap at 8GB
+SWAP_SIZE=$((TOTAL_RAM < 8000 ? TOTAL_RAM : 8000))
 log "Creating $SWAP_SIZE MB swapfile..."
 fallocate -l "${SWAP_SIZE}M" /mnt/swapfile
 chmod 600 /mnt/swapfile
@@ -142,7 +141,7 @@ fi
 chmod +x /mnt/root/1-arch-setup.sh
 
 log "Entering chroot and launching setup..."
-arch-chroot /mnt /root/1-arch-setup.sh "$USERNAME" "$PASSWORD" "$HOSTNAME" "$LOCALE" "$TIMEZONE" "$DM" "$KEYMAP"
+arch-chroot /mnt /root/1-arch-setup.sh "$USERNAME" "$PASSWORD" "$HOSTNAME" "$LOCALE" "$TIMEZONE" "$DM" "$KEYMAP" "$GPU_VENDOR"
 
 log "Unmounting and rebooting in 5 seconds..."
 umount -R /mnt
