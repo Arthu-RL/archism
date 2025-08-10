@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-pacman -Sycv --noconfirm iptables-nft ufw
+pacman -Syv --noconfirm iptables-nft ufw
 
 systemctl enable ufw
 

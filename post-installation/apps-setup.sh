@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-pacman -Sycv --noconfirm chromium \
+pacman -Syv --noconfirm chromium \
     gnome-text-editor \
     eog \
     mpv
