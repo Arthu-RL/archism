@@ -1,0 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* You can also add global, custom CSS overrides here if you ever need them, 
+   but for this minimalist installer, these three lines are all you need. */
