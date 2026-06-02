@@ -26,15 +26,11 @@ Archism automates the **entire installation process**, from disk partitioning to
 
 ---
 
-## 🔧 Run Scripts
+## 🔧 Run Script
 
-> Boot into the Arch ISO, connect to the internet, then run:
+> Boot into the Arch ISO, then follow tutorial:
 
-```sh
-curl -O https://raw.githubusercontent.com/Arthu-RL/archism/main/0-auto-install.sh
-chmod +x 0-auto-install.sh
-sudo ./0-auto-install.sh
-```
+![Archism Tutorial](docs/ARCH_BOOT_USB.md)
 
 The script will:
 
@@ -43,35 +39,6 @@ The script will:
 3. Chroot and run the post-install script
 4. Set up everything automatically
 5. Reboot into your new Arch desktop
-
----
-
-## 📁 Files
-
-| File                | Description                                                                |
-| ------------------- | -------------------------------------------------------------------------- |
-| `0-auto-install.sh` | Runs in the Arch ISO. Partitions, installs base system, chroots into Arch. |
-| `1-arch-setup.sh`   | Runs *inside chroot*. Installs drivers, DE, tools, configures system.      |
-
----
-
-## 🧪 Customization
-
-You can edit the top variables of `0-auto-install.sh`:
-
-```bash
-DISK="/dev/sda"
-HOSTNAME="archbox"
-USERNAME="username"
-LOCALE="en_US.UTF-8" # "pt_BR.UTF-8"
-TIMEZONE="America/Sao_Paulo"
-DM="gdm"    # Display Manager argument (e.g., gdm, sddm, lightdm)
-KEYMAP="br-abnt2"
-```
-
-Add your own packages and services, as needed!
-
----
 
 ## ⚠️ Warning
 

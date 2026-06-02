@@ -1,0 +1,11 @@
+[package]
+name = "install"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+tokio.workspace = true
+config.workspace = true
+constants.workspace = true
+state.workspace = true

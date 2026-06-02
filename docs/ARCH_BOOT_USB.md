@@ -1,13 +1,13 @@
 # 📦 `ARCH_BOOT_USB.md`
 
-A step-by-step guide to **download**, **verify**, and **flash** the latest Arch Linux ISO to a USB drive.
+A step-by-step guide to **download**, **verify**, **flash** the official Arch Linux ISO, and **run your custom installer** directly from a remote source.
 
 ---
 
 ## 📅 Set ISO Version (Current Release)
 
 ```sh
-export ARCH_INSTALL_DATE=2025.06.01
+export ARCH_INSTALL_DATE=2026.06.01
 ```
 
 ---
@@ -15,8 +15,8 @@ export ARCH_INSTALL_DATE=2025.06.01
 ## 🌐 Download ISO + Checksum File
 
 ```sh
-wget https://mirror.rackspace.com/archlinux/iso/${ARCH_INSTALL_DATE}/archlinux-${ARCH_INSTALL_DATE}-x86_64.iso
-wget https://mirror.rackspace.com/archlinux/iso/${ARCH_INSTALL_DATE}/sha256sums.txt
+wget [https://mirror.rackspace.com/archlinux/iso/$](https://mirror.rackspace.com/archlinux/iso/$){ARCH_INSTALL_DATE}/archlinux-${ARCH_INSTALL_DATE}-x86_64.iso
+wget [https://mirror.rackspace.com/archlinux/iso/$](https://mirror.rackspace.com/archlinux/iso/$){ARCH_INSTALL_DATE}/sha256sums.txt
 ```
 
 ---
@@ -70,14 +70,53 @@ lsblk
 
 ## ✅ After Flashing
 
-1. Wait until `dd` completes and returns to prompt
+1. Wait until `dd` completes and returns to prompt.
 2. Run `sync` to flush write cache:
 
-   ```sh
-   sync
-   ```
+```sh
+sync
+```
+
 3. Remove USB safely:
 
-   ```sh
-   udisksctl power-off -b /dev/sdX
-   ```
+```sh
+udisksctl power-off -b /dev/sdX
+```
+
+---
+
+## 🚀 Step 6: Boot and Run the Installer Live
+
+After boot into flashdrive, you will see the arch linux command line. Follow instructions below for complete installation.
+
+### 1. Connect to Internet
+
+If you are using a network cable (Ethernet), the connection will be automatically established. In case of WIFI, use `iwctl` utility:
+
+```sh
+iwctl
+
+# Inside iwctl, locate your interfae, scan and connect
+# station wlan0 scan
+# station wlan0 get-networks
+# station wlan0 connect NOME_DA_SUA_REDE
+# quit
+```
+
+Network test command:
+
+```sh
+ping -c 3 archlinux.org
+```
+
+### 2. Download the binary
+
+Download the binary and execute it to configure a arch linux installation:
+
+```sh
+wget [https://github.com/SEU_USUARIO/SEU_REPOSITORIO/releases/latest/download/archism-installer](https://github.com/SEU_USUARIO/SEU_REPOSITORIO/releases/latest/download/archism-installer)
+
+chmod +x archism-installer
+
+./archism-installer
+```

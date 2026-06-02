@@ -1,0 +1,46 @@
+[package]
+name = "archism-runner"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+resolver = "3"
+members = [
+    "crates/wifi",
+    "crates/ui",
+    "crates/state",
+    "crates/install",
+    "crates/config",
+    "crates/constants"
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+crossterm = "0.29.0"
+serde = { version = "1.0.228", features = ["derive"] }
+ratatui = "0.30.0"
+tokio = { version = "1.43.0", features = ["rt-multi-thread", "macros", "process", "io-util"] }
+
+wifi = { path = "crates/wifi" }
+ui = { path = "crates/ui" }
+state = { path = "crates/state" }
+install = { path = "crates/install" }
+config = { path = "crates/config" }
+constants = { path = "crates/constants" }
+
+[dependencies]
+tokio.workspace = true
+crossterm.workspace = true
+ratatui.workspace = true
+serde.workspace = true
+
+ui.workspace = true
+state.workspace = true
+config.workspace = true
+constants.workspace = true
+install.workspace = true
+wifi.workspace = true
