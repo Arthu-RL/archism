@@ -114,7 +114,7 @@ ping -c 3 archlinux.org
 Download the binary and execute it to configure a arch linux installation:
 
 ```sh
-wget [https://github.com/SEU_USUARIO/SEU_REPOSITORIO/releases/latest/download/archism-installer](https://github.com/SEU_USUARIO/SEU_REPOSITORIO/releases/latest/download/archism-installer)
+wget https://github.com/Arthu-RL/archism/releases/download/1.0.0/archism-runner
 
 chmod +x archism-installer
 
