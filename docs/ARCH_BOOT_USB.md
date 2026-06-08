@@ -35,6 +35,14 @@ sha256sum -c sha256sums.txt 2>&1 | grep "archlinux-$ARCH_INSTALL_DATE-x86_64.iso
 
 ## 💾 Flash ISO to USB with `dd`
 
+Before flash, make sure your device is umounted, if not, the flash will not work:
+
+```sh
+sudo umount /dev/sdX*
+```
+
+Now you can flash the iso in it:
+
 ```sh
 sudo dd bs=4M if=archlinux-$ARCH_INSTALL_DATE-x86_64.iso of=/dev/sdX status=progress oflag=sync
 ```
