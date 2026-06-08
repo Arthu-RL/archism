@@ -15,8 +15,8 @@ export ARCH_INSTALL_DATE=2026.06.01
 ## 🌐 Download ISO + Checksum File
 
 ```sh
-wget [https://mirror.rackspace.com/archlinux/iso/$](https://mirror.rackspace.com/archlinux/iso/$){ARCH_INSTALL_DATE}/archlinux-${ARCH_INSTALL_DATE}-x86_64.iso
-wget [https://mirror.rackspace.com/archlinux/iso/$](https://mirror.rackspace.com/archlinux/iso/$){ARCH_INSTALL_DATE}/sha256sums.txt
+wget https://mirror.rackspace.com/archlinux/iso/$ARCH_INSTALL_DATE/archlinux-$ARCH_INSTALL_DATE-x86_64.iso
+wget https://mirror.rackspace.com/archlinux/iso/$ARCH_INSTALL_DATE/sha256sums.txt
 ```
 
 ---
@@ -26,7 +26,7 @@ wget [https://mirror.rackspace.com/archlinux/iso/$](https://mirror.rackspace.com
 Ensure the downloaded ISO is valid and not corrupted:
 
 ```sh
-sha256sum -c sha256sums.txt 2>&1 | grep "archlinux-${ARCH_INSTALL_DATE}-x86_64.iso"
+sha256sum -c sha256sums.txt 2>&1 | grep "archlinux-$ARCH_INSTALL_DATE-x86_64.iso"
 ```
 
 ✅ Output should show: `OK`
@@ -36,7 +36,7 @@ sha256sum -c sha256sums.txt 2>&1 | grep "archlinux-${ARCH_INSTALL_DATE}-x86_64.i
 ## 💾 Flash ISO to USB with `dd`
 
 ```sh
-sudo dd bs=4M if=archlinux-${ARCH_INSTALL_DATE}-x86_64.iso of=/dev/sdX status=progress oflag=sync
+sudo dd bs=4M if=archlinux-$ARCH_INSTALL_DATE-x86_64.iso of=/dev/sdX status=progress oflag=sync
 ```
 
 > Replace `/dev/sdX` with the actual device (like `/dev/sda`, `/dev/sdb`) — **not** a partition like `/dev/sda1`.
