@@ -42,6 +42,7 @@ pub async fn run_cmd(state: Arc<Mutex<AppState>>, cmd: &str, args: &[&str]) -> R
 
     let mut child = Command::new(cmd)
         .args(args)
+        .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
@@ -141,10 +142,14 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
 
     {
         let mut s = state.lock().unwrap();
-        s.progress_stage = "Filtrando espelhos (Reflector)".to_string();
+        s.progress_stage = "Filtrando espelhos rápidos (Reflector)".to_string();
         s.progress_percent = 38;
     }
-    let _ = run_cmd(state.clone(), "reflector", &["--latest", "10", "--sort", "rate", "--save", "/etc/pacman.d/mirrorlist"]).await;
+
+    if let Err(e) = run_cmd(state.clone(), "reflector", &["--latest", "20", "--protocol", "https", "--sort", "rate", "--save", "/etc/pacman.d/mirrorlist"]).await {
+        let mut s = state.lock().unwrap();
+        s.logs.push(format!("[AVISO] Reflector falhou: {}. Usando lista padrão.", e));
+    }
 
     {
         let mut s = state.lock().unwrap();
@@ -153,7 +158,7 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
     }
 
     let mut pkgs: Vec<&str> = vec![
-        "/mnt", "--needed",
+        "/mnt", "--needed", "--noconfirm",
         "base", "linux", "linux-firmware",
         "nano", "git", "zsh", "wget", "curl", "sudo",
         "networkmanager", "grub", "efibootmgr",
