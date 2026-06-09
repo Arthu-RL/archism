@@ -207,7 +207,7 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
         systemctl enable {dm}\n\
         grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB\n\
         grub-mkconfig -o /boot/grub/grub.cfg\n\
-        useradd -m -G wheel -s /bin/zsh {username}\n\
+        useradd -m -G wheel -s /bin/bash {username}\n\
         echo '{username}:{username}' | chpasswd\n\
         echo '{username} ALL=(ALL:ALL) ALL' > /etc/sudoers.d/{username}\n\
         chmod 440 /etc/sudoers.d/{username}\n",

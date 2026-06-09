@@ -12,7 +12,6 @@ Archism automates the **entire installation process**, from disk partitioning to
 - 🖥️ Sets up your chosen Desktop Environment (e.g., Cinnamon, GNOME, KDE)
 - 🧩 Installs NVIDIA drivers, Docker, and developer tools
 - 🌍 Configures locale, timezone, and keymap
-- 👤 Creates your user account with Zsh and Oh-My-Zsh
 - 🔒 Enables GDM, Docker, and NetworkManager services
 - 🔁 Installs and configures GRUB EFI bootloader
 
