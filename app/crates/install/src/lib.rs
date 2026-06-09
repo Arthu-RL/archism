@@ -145,7 +145,6 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
         s.progress_stage = "Configurando espelhos rápidos (HTTPS)".to_string();
         s.progress_percent = 40;
     }
-
     let _ = run_cmd(state.clone(), "reflector", &["--latest", "5", "--protocol", "https", "--sort", "rate", "--save", "/etc/pacman.d/mirrorlist"]).await;
 
     {
@@ -153,7 +152,6 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
         s.progress_stage = "Atualizando chaves de segurança (Keyring)".to_string();
         s.progress_percent = 45;
     }
-
     run_cmd(state.clone(), "pacman", &["-Sy", "archlinux-keyring", "--noconfirm"]).await?;
 
     {
@@ -165,7 +163,7 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
     let mut pkgs: Vec<&str> = vec![
         "/mnt", "--needed", "--noconfirm",
         "base", "linux", "linux-firmware",
-        "nano", "git", "zsh", "wget", "curl", "sudo",
+        "nano", "git", "wget", "curl", "sudo",
         "networkmanager", "grub", "efibootmgr",
         "xorg-server",
         &config.dm,
@@ -221,8 +219,7 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
         username = config.username,
     );
 
-    let script_host_path: &str = "/mnt/tmp/archism_setup.sh";
-    std::fs::create_dir_all("/mnt/tmp").map_err(|e: std::io::Error| format!("Falha ao criar /mnt/tmp: {}", e))?;
+    let script_host_path: &str = "/mnt/archism_setup.sh";
     std::fs::write(script_host_path, &script).map_err(|e: std::io::Error| format!("Falha ao criar script de chroot: {}", e))?;
 
     {
@@ -230,7 +227,8 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
         s.progress_stage = "Executando configurações no chroot".to_string();
         s.progress_percent = 90;
     }
-    run_cmd(state.clone(), "arch-chroot", &["/mnt", "bash", "/tmp/archism_setup.sh"]).await?;
+
+    run_cmd(state.clone(), "arch-chroot", &["/mnt", "bash", "/archism_setup.sh"]).await?;
 
     std::fs::remove_file(script_host_path).ok();
 
