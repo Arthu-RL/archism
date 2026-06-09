@@ -18,7 +18,7 @@ pub fn partition(disk: &str, num: u8) -> String {
 
 pub fn gpu_packages(gpu: &str) -> &'static [&'static str] {
     match gpu {
-        "nvidia" => &["nvidia", "nvidia-utils", "nvidia-settings"],
+        "nvidia" => &["nvidia-open", "nvidia-utils", "nvidia-settings"],
         "amd" => &["mesa", "vulkan-radeon", "libva-mesa-driver"],
         "intel" => &["mesa", "intel-media-driver", "vulkan-intel"],
         _ => &[],
@@ -122,7 +122,7 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
     {
         let mut s = state.lock().unwrap();
         s.progress_stage = "Montando sistemas de arquivos".to_string();
-        s.progress_percent = 28;
+        s.progress_percent = 30;
     }
     run_cmd(state.clone(), "mount", &[&part_root, "/mnt"]).await?;
     run_cmd(state.clone(), "mkdir", &["-p", "/mnt/boot"]).await?;
@@ -132,7 +132,7 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
         {
             let mut s = state.lock().unwrap();
             s.progress_stage = format!("Criando arquivo SWAP de {}GB", config.swap_size);
-            s.progress_percent = 33;
+            s.progress_percent = 40;
         }
         let swap_arg = format!("{}G", config.swap_size);
         run_cmd(state.clone(), "fallocate", &["-l", &swap_arg, "/mnt/swapfile"]).await?;
@@ -142,19 +142,8 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
 
     {
         let mut s = state.lock().unwrap();
-        s.progress_stage = "Filtrando espelhos rápidos (Reflector)".to_string();
-        s.progress_percent = 38;
-    }
-
-    if let Err(e) = run_cmd(state.clone(), "reflector", &["--latest", "20", "--protocol", "https", "--sort", "rate", "--save", "/etc/pacman.d/mirrorlist"]).await {
-        let mut s = state.lock().unwrap();
-        s.logs.push(format!("[AVISO] Reflector falhou: {}. Usando lista padrão.", e));
-    }
-
-    {
-        let mut s = state.lock().unwrap();
         s.progress_stage = "Instalando sistema base (Aguarde)".to_string();
-        s.progress_percent = 45;
+        s.progress_percent = 50;
     }
 
     let mut pkgs: Vec<&str> = vec![
@@ -162,7 +151,7 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
         "base", "linux", "linux-firmware",
         "nano", "git", "zsh", "wget", "curl", "sudo",
         "networkmanager", "grub", "efibootmgr",
-        "reflector", "xorg-server",
+        "xorg-server",
         &config.dm,
     ];
 
@@ -187,7 +176,7 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
     {
         let mut s = state.lock().unwrap();
         s.progress_stage = "Escrevendo scripts chroot".to_string();
-        s.progress_percent = 75;
+        s.progress_percent = 80;
     }
 
     let script = format!(
@@ -223,7 +212,7 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
     {
         let mut s = state.lock().unwrap();
         s.progress_stage = "Executando configurações no chroot".to_string();
-        s.progress_percent = 80;
+        s.progress_percent = 90;
     }
     run_cmd(state.clone(), "arch-chroot", &["/mnt", "bash", "/tmp/archism_setup.sh"]).await?;
 
