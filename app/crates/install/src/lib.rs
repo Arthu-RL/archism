@@ -1,7 +1,7 @@
 use std::{
-    process::Stdio,
-    sync::{Arc, Mutex},
+    process::Stdio, sync::{Arc, Mutex}
 };
+use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
@@ -236,6 +236,7 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
         let mut s: std::sync::MutexGuard<'_, AppState> = state.lock().unwrap();
         s.progress_stage = "Instalação Concluída".to_string();
         s.progress_percent = 100;
+        std::thread::sleep(Duration::from_millis(5000));
         s.step = Step::Success;
     }
     Ok(())
