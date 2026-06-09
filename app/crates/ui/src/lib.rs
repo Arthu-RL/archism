@@ -9,13 +9,13 @@ use constants::{LOCALES, TIMEZONES, KEYMAPS, DMS, GPUS};
 use state::{AppField, AppState, Step};
 
 pub fn draw_ui(f: &mut Frame, s: &AppState) {
-    let chunks = Layout::default()
+    let chunks: std::rc::Rc<[ratatui::prelude::Rect]> = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
         .constraints([Constraint::Length(3), Constraint::Min(1), Constraint::Length(3)].as_ref())
         .split(f.area());
 
-    let step_text = match s.step {
+    let step_text: &str = match s.step {
         Step::Wifi => "0. Conexão Wi-Fi",
         Step::Configure => "1. Configurar Base",
         Step::Review => "2. Revisar Configurações",
@@ -23,13 +23,13 @@ pub fn draw_ui(f: &mut Frame, s: &AppState) {
         Step::Success => "4. Concluído",
     };
 
-    let header = Paragraph::new(format!("⬡ Archism Launcher  |  Etapa Atual: {}", step_text))
+    let header: Paragraph<'_> = Paragraph::new(format!("⬡ Archism Launcher  |  Etapa Atual: {}", step_text))
         .block(Block::default().borders(Borders::ALL).style(Style::default().fg(Color::Cyan)));
     f.render_widget(header, chunks[0]);
 
     match s.step {
         Step::Wifi => {
-            let wifi_chunks = Layout::default()
+            let wifi_chunks: std::rc::Rc<[ratatui::prelude::Rect]> = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([Constraint::Min(8), Constraint::Length(3), Constraint::Length(3)].as_ref())
                 .split(chunks[1]);
@@ -43,21 +43,21 @@ pub fn draw_ui(f: &mut Frame, s: &AppState) {
                 ListItem::new(format!("  • {}", net)).style(style)
             }).collect();
 
-            let list = List::new(items).block(Block::default().borders(Borders::ALL).title("Selecione sua rede sem fio (Wi-Fi)"));
+            let list: List<'_> = List::new(items).block(Block::default().borders(Borders::ALL).title("Selecione sua rede sem fio (Wi-Fi)"));
             f.render_widget(list, wifi_chunks[0]);
 
-            let pass_style = if s.wifi_input_mode {
+            let pass_style: Style = if s.wifi_input_mode {
                 Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
             } else {
                 Style::default().fg(Color::Gray)
             };
 
-            let stars = "*".repeat(s.wifi_password.len());
-            let pass_box = Paragraph::new(stars)
+            let stars: String = "*".repeat(s.wifi_password.len());
+            let pass_box: Paragraph<'_> = Paragraph::new(stars)
                 .block(Block::default().borders(Borders::ALL).title("Senha da Rede Selecionada (Pressione ENTER para digitar)").style(pass_style));
             f.render_widget(pass_box, wifi_chunks[1]);
 
-            let status_box = Paragraph::new(s.wifi_status.as_str())
+            let status_box: Paragraph<'_> = Paragraph::new(s.wifi_status.as_str())
                 .block(Block::default().borders(Borders::ALL).title("Status da Conexão"));
             f.render_widget(status_box, wifi_chunks[2]);
         }
@@ -71,7 +71,7 @@ pub fn draw_ui(f: &mut Frame, s: &AppState) {
                 ].as_ref())
                 .split(chunks[1]);
 
-            let fields = [
+            let fields: [(AppField, String); 9] = [
                 (AppField::Disk, format!("Disco de Destino: {}", s.disks.get(s.disk_idx).unwrap_or(&"Nenhum".to_string()))),
                 (AppField::Hostname, format!("Nome da Máquina (Hostname): {}", s.hostname)),
                 (AppField::Username, format!("Nome de Usuário (Username): {}", s.username)),
@@ -84,19 +84,19 @@ pub fn draw_ui(f: &mut Frame, s: &AppState) {
             ];
 
             for (field, text) in fields.iter() {
-                let idx = match field {
+                let idx: usize = match field {
                     AppField::Disk => 0, AppField::Hostname => 1, AppField::Username => 2,
                     AppField::Locale => 3, AppField::Timezone => 4, AppField::Keymap => 5,
                     AppField::SwapSize => 6, AppField::Dm => 7, AppField::Gpu => 8,
                     _ => 0,
                 };
-                let is_active = s.active_field == *field;
-                let style = if is_active {
+                let is_active: bool = s.active_field == *field;
+                let style: Style = if is_active {
                     Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
                 } else {
                     Style::default().fg(Color::White)
                 };
-                let p = Paragraph::new(text.as_str()).block(Block::default().borders(Borders::ALL).style(style));
+                let p: Paragraph<'_> = Paragraph::new(text.as_str()).block(Block::default().borders(Borders::ALL).style(style));
                 f.render_widget(p, form_chunks[idx]);
             }
         }
@@ -117,7 +117,7 @@ pub fn draw_ui(f: &mut Frame, s: &AppState) {
                 s.hostname, s.username, LOCALES[s.locale_idx], TIMEZONES[s.timezone_idx],
                 KEYMAPS[s.keymap_idx], s.swap_size, DMS[s.dm_idx].to_uppercase(), GPUS[s.gpu_idx].to_uppercase()
             );
-            let p = Paragraph::new(review_text).block(Block::default().borders(Borders::ALL).title("Revisão"));
+            let p: Paragraph<'_> = Paragraph::new(review_text).block(Block::default().borders(Borders::ALL).title("Revisão"));
             f.render_widget(p, chunks[1]);
         }
         Step::Install => {
@@ -126,8 +126,8 @@ pub fn draw_ui(f: &mut Frame, s: &AppState) {
                 .constraints([Constraint::Length(3), Constraint::Min(1)].as_ref())
                 .split(chunks[1]);
 
-            let label = format!("{}% - {}", s.progress_percent, s.progress_stage);
-            let gauge = Gauge::default()
+            let label: String = format!("{}% - {}", s.progress_percent, s.progress_stage);
+            let gauge: Gauge<'_> = Gauge::default()
                 .block(Block::default().borders(Borders::ALL).title("Progresso Geral"))
                 .gauge_style(Style::default().fg(Color::Green))
                 .percent(s.progress_percent as u16)

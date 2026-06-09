@@ -19,9 +19,9 @@ pub fn partition(disk: &str, num: u8) -> String {
 pub fn gpu_packages(gpu: &str) -> &'static [&'static str] {
     match gpu {
         "nvidia" => &["nvidia-open", "nvidia-utils", "nvidia-settings"],
-        "amd" => &["mesa", "vulkan-radeon", "libva-mesa-driver"],
-        "intel" => &["mesa", "intel-media-driver", "vulkan-intel"],
-        _ => &[],
+        "amd"    => &["mesa", "vulkan-radeon", "libva-mesa-driver"],
+        "intel"  => &["mesa", "intel-media-driver", "vulkan-intel"],
+        _        => &[],
     }
 }
 
@@ -36,47 +36,47 @@ pub fn de_package(dm: &str) -> &'static str {
 
 pub async fn run_cmd(state: Arc<Mutex<AppState>>, cmd: &str, args: &[&str]) -> Result<(), String> {
     {
-        let mut s = state.lock().unwrap();
+        let mut s: std::sync::MutexGuard<'_, AppState> = state.lock().unwrap();
         s.logs.push(format!("$ {} {}", cmd, args.join(" ")));
     }
 
-    let mut child = Command::new(cmd)
+    let mut child: tokio::process::Child = Command::new(cmd)
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|e| format!("Falha ao executar '{}': {}", cmd, e))?;
+        .map_err(|e: std::io::Error| format!("Falha ao executar '{}': {}", cmd, e))?;
 
     if let Some(stdout) = child.stdout.take() {
-        let state_c = state.clone();
+        let state_c: Arc<Mutex<AppState>> = state.clone();
         tokio::spawn(async move {
-            let mut lines = BufReader::new(stdout).lines();
+            let mut lines: tokio::io::Lines<BufReader<tokio::process::ChildStdout>> = BufReader::new(stdout).lines();
             while let Ok(Some(line)) = lines.next_line().await {
-                let mut s = state_c.lock().unwrap();
+                let mut s: std::sync::MutexGuard<'_, AppState> = state_c.lock().unwrap();
                 s.logs.push(line);
             }
         });
     }
 
     if let Some(stderr) = child.stderr.take() {
-        let state_c = state.clone();
+        let state_c: Arc<Mutex<AppState>> = state.clone();
         tokio::spawn(async move {
-            let mut lines = BufReader::new(stderr).lines();
+            let mut lines: tokio::io::Lines<BufReader<tokio::process::ChildStderr>> = BufReader::new(stderr).lines();
             while let Ok(Some(line)) = lines.next_line().await {
-                let mut s = state_c.lock().unwrap();
+                let mut s: std::sync::MutexGuard<'_, AppState> = state_c.lock().unwrap();
                 s.logs.push(format!("[ERROR] {}", line));
             }
         });
     }
 
-    let status = child
+    let status: std::process::ExitStatus = child
         .wait()
         .await
-        .map_err(|e| format!("Erro aguardando processo '{}': {}", cmd, e))?;
+        .map_err(|e: std::io::Error| format!("Erro aguardando processo '{}': {}", cmd, e))?;
 
     if status.success() {
-        let mut s = state.lock().unwrap();
+        let mut s: std::sync::MutexGuard<'_, AppState> = state.lock().unwrap();
         s.logs.push(format!("✓ {} finalizado", cmd));
         Ok(())
     } else {
@@ -91,19 +91,19 @@ pub async fn run_cmd(state: Arc<Mutex<AppState>>, cmd: &str, args: &[&str]) -> R
 pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallConfig) -> Result<(), String> {
     validate_config(&config)?;
 
-    let disk = &config.disk;
-    let part_boot = partition(disk, 1);
-    let part_root = partition(disk, 2);
+    let disk: &String = &config.disk;
+    let part_boot: String = partition(disk, 1);
+    let part_root: String = partition(disk, 2);
 
     {
-        let mut s = state.lock().unwrap();
+        let mut s: std::sync::MutexGuard<'_, AppState> = state.lock().unwrap();
         s.progress_stage = "Sincronizando relógio (NTP)".to_string();
         s.progress_percent = 5;
     }
     run_cmd(state.clone(), "timedatectl", &["set-ntp", "true"]).await?;
 
     {
-        let mut s = state.lock().unwrap();
+        let mut s: std::sync::MutexGuard<'_, AppState> = state.lock().unwrap();
         s.progress_stage = "Criando partições GPT".to_string();
         s.progress_percent = 10;
     }
@@ -112,7 +112,7 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
     run_cmd(state.clone(), "sgdisk", &["-n", "2:0:0", "-t", "2:8300", "-c", "2:ROOT", disk]).await?;
 
     {
-        let mut s = state.lock().unwrap();
+        let mut s: std::sync::MutexGuard<'_, AppState> = state.lock().unwrap();
         s.progress_stage = "Formatando partições".to_string();
         s.progress_percent = 20;
     }
@@ -120,7 +120,7 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
     run_cmd(state.clone(), "mkfs.ext4", &["-F", &part_root]).await?;
 
     {
-        let mut s = state.lock().unwrap();
+        let mut s: std::sync::MutexGuard<'_, AppState> = state.lock().unwrap();
         s.progress_stage = "Montando sistemas de arquivos".to_string();
         s.progress_percent = 30;
     }
@@ -130,18 +130,34 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
 
     if config.swap_size > 0 {
         {
-            let mut s = state.lock().unwrap();
+            let mut s: std::sync::MutexGuard<'_, AppState> = state.lock().unwrap();
             s.progress_stage = format!("Criando arquivo SWAP de {}GB", config.swap_size);
-            s.progress_percent = 40;
+            s.progress_percent = 35;
         }
-        let swap_arg = format!("{}G", config.swap_size);
+        let swap_arg: String = format!("{}G", config.swap_size);
         run_cmd(state.clone(), "fallocate", &["-l", &swap_arg, "/mnt/swapfile"]).await?;
         run_cmd(state.clone(), "chmod", &["600", "/mnt/swapfile"]).await?;
         run_cmd(state.clone(), "mkswap", &["/mnt/swapfile"]).await?;
     }
 
     {
-        let mut s = state.lock().unwrap();
+        let mut s: std::sync::MutexGuard<'_, AppState> = state.lock().unwrap();
+        s.progress_stage = "Configurando espelhos rápidos (HTTPS)".to_string();
+        s.progress_percent = 40;
+    }
+
+    let _ = run_cmd(state.clone(), "reflector", &["--latest", "5", "--protocol", "https", "--sort", "rate", "--save", "/etc/pacman.d/mirrorlist"]).await;
+
+    {
+        let mut s: std::sync::MutexGuard<'_, AppState> = state.lock().unwrap();
+        s.progress_stage = "Atualizando chaves de segurança (Keyring)".to_string();
+        s.progress_percent = 45;
+    }
+
+    run_cmd(state.clone(), "pacman", &["-Sy", "archlinux-keyring", "--noconfirm"]).await?;
+
+    {
+        let mut s: std::sync::MutexGuard<'_, AppState> = state.lock().unwrap();
         s.progress_stage = "Instalando sistema base (Aguarde)".to_string();
         s.progress_percent = 50;
     }
@@ -155,7 +171,7 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
         &config.dm,
     ];
 
-    let de = de_package(&config.dm);
+    let de: &str = de_package(&config.dm);
     if !de.is_empty() { pkgs.push(de); }
 
     for pkg in gpu_packages(&config.gpu) { pkgs.push(pkg); }
@@ -163,9 +179,9 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
     run_cmd(state.clone(), "pacstrap", &pkgs).await?;
 
     {
-        let mut s = state.lock().unwrap();
+        let mut s: std::sync::MutexGuard<'_, AppState> = state.lock().unwrap();
         s.progress_stage = "Gerando tabela fstab".to_string();
-        s.progress_percent = 70;
+        s.progress_percent = 75;
     }
     run_cmd(state.clone(), "sh", &["-c", "genfstab -U /mnt > /mnt/etc/fstab"]).await?;
 
@@ -174,12 +190,12 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
     }
 
     {
-        let mut s = state.lock().unwrap();
+        let mut s: std::sync::MutexGuard<'_, AppState> = state.lock().unwrap();
         s.progress_stage = "Escrevendo scripts chroot".to_string();
         s.progress_percent = 80;
     }
 
-    let script = format!(
+    let script: String = format!(
         "#!/bin/bash\nset -euo pipefail\n\
         ln -sf /usr/share/zoneinfo/{tz} /etc/localtime\n\
         hwclock --systohc\n\
@@ -205,12 +221,12 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
         username = config.username,
     );
 
-    let script_host_path = "/mnt/tmp/archism_setup.sh";
-    std::fs::create_dir_all("/mnt/tmp").map_err(|e| format!("Falha ao criar /mnt/tmp: {}", e))?;
-    std::fs::write(script_host_path, &script).map_err(|e| format!("Falha ao criar script de chroot: {}", e))?;
+    let script_host_path: &str = "/mnt/tmp/archism_setup.sh";
+    std::fs::create_dir_all("/mnt/tmp").map_err(|e: std::io::Error| format!("Falha ao criar /mnt/tmp: {}", e))?;
+    std::fs::write(script_host_path, &script).map_err(|e: std::io::Error| format!("Falha ao criar script de chroot: {}", e))?;
 
     {
-        let mut s = state.lock().unwrap();
+        let mut s: std::sync::MutexGuard<'_, AppState> = state.lock().unwrap();
         s.progress_stage = "Executando configurações no chroot".to_string();
         s.progress_percent = 90;
     }
@@ -219,7 +235,7 @@ pub async fn perform_installation(state: Arc<Mutex<AppState>>, config: InstallCo
     std::fs::remove_file(script_host_path).ok();
 
     {
-        let mut s = state.lock().unwrap();
+        let mut s: std::sync::MutexGuard<'_, AppState> = state.lock().unwrap();
         s.progress_stage = "Instalação Concluída".to_string();
         s.progress_percent = 100;
         s.step = Step::Success;
